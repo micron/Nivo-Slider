@@ -8,6 +8,36 @@
  * 
  * March 2010
  */
+(function($){
+	$.extend($.easing, {
+		swing2:function(x,t,b,c,d) {
+			if((t/=d/2)<1) return c/2*t*t+b;
+			return -c/2*((--t)*(t-2)-1)+b;
+		},
+		swing3:function(x,t,b,c,d) {
+			if((t/=d/2)<1) return c/2*t*t*t+b;
+			return c/2*((t-=2)*t*t+2)+b;
+		},
+		swing4:function(x,t,b,c,d) {
+			if((t/=d/2)<1) return c/2*t*t*t*t+b;
+			return -c/2*((t-=2)*t*t*t-2)+b;
+		},
+		swing5:function(x,t,b,c,d) {
+			if((t/=d/2)<1) return c/2*t*t*t*t*t+b;
+			return c/2*((t-=2)*t*t*t*t+2)+b;
+		},
+		swingx:function(x,t,b,c,d) {
+			if(t==0) return b;
+			if(t==d) return b+c;
+			if((t/=d/2)<1) return c/2*Math.pow(2,10*(t-1))+b;
+			return c/2*(-Math.pow(2,-10*--t)+2)+b;
+		},
+		swingc:function(x,t,b,c,d) {
+			if((t/=d/2)<1) return -c/2*(Math.sqrt(1-t*t)-1)+b;
+			return c/2*(Math.sqrt(1-(t-=2)*t)+1)+b;
+		}
+	});
+})(jQuery);
 
 (function($) {
 
@@ -87,30 +117,40 @@
         //Create caption
         slider.append(
             $('<div class="nivo-caption"><p></p></div>').css({ display:'none', opacity:settings.captionOpacity })
-        );			
+        );
+			
 		
-		// Process caption function
+		/**********************************************************************************************************
+		 * Process caption function
+		 **********************************************************************************************************/
 		var processCaption = function(settings){
 			var nivoCaption = $('.nivo-caption', slider);
-			if(vars.currentImage.attr(settings.captionAttribute) != '' && vars.currentImage.attr(settings.captionAttribute) != undefined){
-				var title = vars.currentImage.attr(settings.captionAttribute);
-				if(title.substr(0,1) == '#') title = $(title).html();	
+			var title = (vars.currentImage.attr('title') != undefined)?vars.currentImage.attr('title'):'';
+			
+			if(title.substr(0,1) == '#') title = $(title).html();
 
-				if(nivoCaption.css('display') == 'block'){
-					nivoCaption.find('p').fadeOut(settings.animSpeed, function(){
-						$(this).html(title);
-						$(this).fadeIn(settings.animSpeed);
-					});
-				} else {
-					nivoCaption.find('p').html(title);
-				}					
-				nivoCaption.fadeIn(settings.animSpeed);
+			if(nivoCaption.css('display') == 'block'){
+				nivoCaption.find('p').fadeOut(settings.animSpeed, function(){
+					$(this).html(title);
+					$(this).fadeIn(settings.animSpeed);
+				});
 			} else {
-				nivoCaption.fadeOut(settings.animSpeed);
+				nivoCaption.find('p').html(title);
+			}
+			
+			if(title == '' || title == undefined){
+				$('.nivo-caption', slider).slideUp(settings.animSpeed);
+			}
+			else {
+				if(settings.showCaption != "never" && settings.showCaption != "hover") $('.nivo-caption', slider).slideDown(settings.animSpeed);
+				if(settings.showCaption == "delay" || settings.showCaption == "delayHover") $('.nivo-caption', slider).delay(settings.hideDelay).slideUp(settings.animSpeed);
 			}
 		}
 		
-        //Process initial  caption
+			
+		/*
+		 * Process initial  caption
+		 */
         processCaption(settings);
         
         //In the words of Super Mario "let's a go!"
@@ -121,33 +161,33 @@
 
         //Add Direction nav
         if(settings.directionNav){
-            slider.append('<div class="nivo-directionNav"><a class="nivo-prevNav">'+ settings.prevText +'</a><a class="nivo-nextNav">'+ settings.nextText +'</a></div>');
-            
-            //Hide Direction nav
-            if(settings.directionNavHide){
-                $('.nivo-directionNav', slider).hide();
-                slider.hover(function(){
-                    $('.nivo-directionNav', slider).show();
-                }, function(){
-                    $('.nivo-directionNav', slider).hide();
-                });
-            }
-            
-            $('a.nivo-prevNav', slider).live('click', function(){
-                if(vars.running) return false;
-                clearInterval(timer);
-                timer = '';
-                vars.currentSlide -= 2;
-                nivoRun(slider, kids, settings, 'prev');
-            });
-            
-            $('a.nivo-nextNav', slider).live('click', function(){
-                if(vars.running) return false;
-                clearInterval(timer);
-                timer = '';
-                nivoRun(slider, kids, settings, 'next');
-            });
-        }
+			 slider.after(' PrevNext  ');
+					
+			 //Hide Direction nav
+			 if(settings.directionNavHide){
+				  $('.nivo-directionNav', slider).hide();
+				  slider.hover(function(){
+					   $('.nivo-directionNav', slider).show();
+				  }, function(){
+					   $('.nivo-directionNav', slider).hide();
+				  });
+			 }
+					
+			 $('a.nivo-prevNav').live('click', function(){
+				  if(vars.running) return false;
+				  clearInterval(timer);
+				  timer = '';
+				  vars.currentSlide-=2;
+				  nivoRun(slider, kids, settings, 'prev');
+			 });
+					
+			 $('a.nivo-nextNav').live('click', function(){
+				  if(vars.running) return false;
+				  clearInterval(timer);
+				  timer = '';
+				  nivoRun(slider, kids, settings, 'next');
+			 });
+		}
         
         //Add Control nav
         if(settings.controlNav){
@@ -204,20 +244,33 @@
             });
         }
         
-        //For pauseOnHover setting
+		/**********************************************************************************************************
+		 * For pauseOnHover setting
+		 **********************************************************************************************************/
         if(settings.pauseOnHover){
-            slider.hover(function(){
-                vars.paused = true;
-                clearInterval(timer);
-                timer = '';
-            }, function(){
-                vars.paused = false;
-                //Restart the timer
-                if(timer == '' && !settings.manualAdvance){
-                    timer = setInterval(function(){ nivoRun(slider, kids, settings, false); }, settings.pauseTime);
-                }
-            });
-        }
+			 slider.hover(function(){
+				  vars.paused = true;
+				  clearInterval(timer);
+				  timer = '';
+				  
+				    //changed by H7
+					var title = (vars.currentImage.attr('title') != undefined)?vars.currentImage.attr('title'):'';
+					if(title != '' && title != undefined){
+						trace(vars.currentImage.attr('title'));
+						if(settings.showCaption == "hover" || settings.showCaption == "delayHover") $('.nivo-caption', slider).slideDown(settings.animSpeed);
+					}
+			 }, function(){
+				 if(settings.showCaption != "always"){
+				  	$('.nivo-caption', slider).slideUp(settings.animSpeed);
+				 }
+						
+				  vars.paused = false;
+				  //Restart the timer
+				  if(timer == '' && !settings.manualAdvance){
+					   timer = setInterval(function(){ nivoRun(slider, kids, settings, false); }, settings.pauseTime);
+				  }
+			 });
+		}
         
         //Event when Animation finishes
         slider.bind('nivo:animFinished', function(){ 
@@ -347,7 +400,9 @@
 				$('.nivo-controlNav a:eq('+ vars.currentSlide +')', slider).addClass('active');
 			}
 			
-			//Process caption
+			/**********************************************************************************************************
+			 * Process caption
+			 **********************************************************************************************************/
 			processCaption(settings);
 			
 			// Remove any slices from last transition
@@ -495,7 +550,7 @@
                     'opacity': '1'
                 });
 
-                firstSlice.animate({ width: slider.width() + 'px' }, (settings.animSpeed*2), '', function(){ slider.trigger('nivo:animFinished'); });
+                firstSlice.animate({ width: slider.width() + 'px' }, (settings.animSpeed*2), 'swing5', function(){ slider.trigger('nivo:animFinished'); });
             }
             else if(settings.effect == 'slideInLeft' || vars.randAnim == 'slideInLeft'){
 				createSlices(slider, settings, vars);
@@ -669,11 +724,12 @@
 		controlNavThumbsReplace: '_thumb.jpg',
 		keyboardNav: true,
 		pauseOnHover: true,
+		showCaption: "always",
+		hideDelay: 1000,
 		manualAdvance: false,
 		captionOpacity: 0.8,
 		prevText: 'Prev',
 		nextText: 'Next',
-		captionAttribute : 'title',
 		beforeChange: function(){},
 		afterChange: function(){},
 		slideshowEnd: function(){},
